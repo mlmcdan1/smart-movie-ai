@@ -1,5 +1,10 @@
 # 🎬 Smart Movie App
 
+## 🎥 Demo
+
+[![Watch the Demo](https://img.youtube.com/vi/tL5h2j8RaMc/0.jpg)](https://www.youtube.com/watch?v=tL5h2j8RaMc)
+
+Click the image above to watch a quick demo of the Smart Movie AI App in action. This project uses AI and real-time movie data to deliver smart, personalized movie recommendations.
 Netflix-style movie browsing meets community-driven recommendations.
 
 Built with real-time TMDb data, a dark UI, and future plans for AI chat and social commentary.
