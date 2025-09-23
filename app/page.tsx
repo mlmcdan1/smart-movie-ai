@@ -1,24 +1,9 @@
-import { fetchPopularMovies, fetchTrendingMovies, fetchTopRatedMovies, fetchUpcomingMovies } from "@/lib/tmdb";
-import MovieRow from "@/components/MovieRow";
-import Hero from "@/components/Hero";
+'use client';
 
+import dynamic from "next/dynamic";
 
+const HomeClient = dynamic(() => import('@/components/HomeClient'), { ssr: false });
 
-export default async function Home() {
-  const [popularMovies, trendingMovies, topRatedMovies, upcomingMovies] = await Promise.all([
-    fetchPopularMovies(),
-    fetchTrendingMovies(),
-    fetchTopRatedMovies(),
-    fetchUpcomingMovies()
-  ]);
-
-  return (
-    <div>
-      <Hero/>
-      <MovieRow title="Trending Now" movies={trendingMovies}/>
-      <MovieRow title="Popular Movies" movies={popularMovies}/>
-      <MovieRow title="Top Rated" movies={topRatedMovies}/>
-      <MovieRow title="Upcoming" movies={upcomingMovies}/>
-    </div>
-  );
+export default function Home() {
+  return <HomeClient />;
 }

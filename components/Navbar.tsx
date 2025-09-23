@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 const links = [
     { name: 'Home', href: '/'},
@@ -12,6 +13,10 @@ const links = [
 
 export default function Navbar() {
     const [active, setActive] = useState('');
+    const { user } = useAuth();
+    const logout = () => {
+        console.log("Logout clicked");
+    }
 
     return (
         <nav className='w-full px-6 py-4 bg-[#0a0a0a] text-white shadow-lg flex justify-between items-center z-50 border-b border-gray-800'>
@@ -43,6 +48,31 @@ export default function Navbar() {
                     </li>
                 ))}
             </ul>
+            <div className='text-sm text-white ml-4'>
+                {user ? (
+                    <div className='flex items-center space-x-4'>
+                        <span className='text-cyan-300'>
+                            Welcome, {user.email}
+                        </span>
+                        <button
+                            onClick={logout}
+                            className='text-sm text-red-400 border
+                            border-red-400 px-3 py-1 rounded 
+                            hover:text-white transition-colors 
+                            duration-300'
+                        >
+                            Logout
+                        </button>
+                    </div>
+                ) : (
+                    <Link 
+                        href="/login"
+                        className='text-cyan-400'    
+                    >
+                        Login
+                    </Link>
+                )}
+            </div>
         </nav>
     );
 }
