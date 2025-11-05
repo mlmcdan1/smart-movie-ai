@@ -1,59 +1,75 @@
 import { NextResponse } from 'next/server';
+import { InferenceClient } from '@huggingface/inference';
+import type { InferenceProviderOrPolicy } from '@huggingface/inference';
+
+const hfApiKey = process.env.HUGGINGFACE_API_KEY;
+const hfModel = process.env.HUGGINGFACE_MODEL ?? 'mistralai/Mistral-7B-Instruct-v0.2';
+const providerEnv = process.env.HUGGINGFACE_PROVIDER?.trim();
+const hfProvider: InferenceProviderOrPolicy | undefined = providerEnv
+  ? (providerEnv as InferenceProviderOrPolicy)
+  : undefined;
+
+const systemPrompt = `You are SmartFlix's cinematic concierge. You must follow every instruction precisely.
+- Respond with exactly one well-known, theatrically released film that has an official poster on TMDB.
+- Format the reply exactly as: Title (Year) — one short, punchy reason they will love it.
+- Year must be four digits. Do not include any extra commentary, leading quotes, bullet points, or additional lines.
+- Do NOT pick obscure, unavailable, or unreleased titles. Stick to recognisable films audiences can easily find.
+- If you cannot comply, answer exactly: "No suitable film found."`;
 
 export async function POST(req: Request) {
-    const {prompt } = await req.json();
+  if (!hfApiKey) {
+    return NextResponse.json({ error: 'Missing HUGGINGFACE_API_KEY environment variable.' }, { status: 500 });
+  }
 
-    try {
-        const response = await fetch("https://api-inference.huggingface.co/models/google/flan-t5-small", {
-            headers: {
-                Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY!}`,
-                "Content-Type": "application/json",
-            },
-            method: "POST",
-            body: JSON.stringify({
-                inputs: prompt,
-            }),
-        });
+  let payload: unknown;
+  try {
+    payload = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON payload.' }, { status: 400 });
+  }
 
-        const text = await response.text();
-        let data;
-        try {
-            data = JSON.parse(text);
-        } catch (err) {
-            console.error("Invalid JSON from Hugging Face:", text);
-            return NextResponse.json(
-                { error: "Invalid JSON from Hugging Face", details: text },
-                { status: response.status }
-            );
-        }
+  const body = (payload && typeof payload === 'object' ? payload : {}) as { prompt?: unknown };
+  const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
 
-        console.log("HF status:", response.status);
-        console.log("HF data:", data);
+  if (!prompt) {
+    return NextResponse.json({ error: 'Prompt is required.' }, { status: 400 });
+  }
 
-        if (!response.ok) {
-            console.error("Hugging Face API Response Error:", {
-                status: response.status,
-                data,
-            });
+  const client = new InferenceClient(hfApiKey);
 
-            return NextResponse.json({
-                error: "Hugging Face API call failed",
-                status: response.status,
-                details: data,
-            }, { status: response.status });
-        }
+  try {
+    const completion = await client.chatCompletion({
+      model: hfModel,
+      ...(hfProvider ? { provider: hfProvider } : {}),
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
 
-        const generated = data[0]?.generated_text ?? JSON.stringify(data);
+    const content = completion.choices?.[0]?.message?.content?.trim();
 
-        return NextResponse.json({ result: generated });
-    } catch (error: any) {
-        console.error('HuggingFace Error:', error?.message || error);
-        console.error("Hugging Face API Error Details:", error);
-        return NextResponse.json(
-            {
-                error: 'Hugging Face Request failed'
-            }, 
-            {status: 500}
-        );
+    if (!content) {
+      return NextResponse.json({ result: 'No suitable film found.' });
     }
+
+    return NextResponse.json({ result: content });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object'
+        ? JSON.stringify(error)
+        : 'Failed to reach Hugging Face Inference API.';
+
+    console.error('SmartFlix AI route error:', error);
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 }
+
