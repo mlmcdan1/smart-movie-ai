@@ -119,12 +119,11 @@ function parseRecommendationText(text: string): { title: string | null; year: nu
 
   const firstLine = trimmed.split(/\n+/)[0] ?? trimmed;
 
-  const pattern =
-    /^(?<title>.+?)(?:\s*\((?<year>\d{4})(?:[^)]*)\))?\s*(?:[-–—:]\s*)(?<reason>.+)$/;
+  const pattern = /^(.*?)(?:\s*\((\d{4})(?:[^)]*)\))?\s*(?:[-–—:]\s*)(.+)$/;
 
   const match = firstLine.match(pattern);
 
-  if (!match || !match.groups) {
+  if (!match) {
     const quoted = firstLine.match(/["“](.+?)["”]/);
     const fallbackTitle = quoted ? quoted[1].trim() : null;
     const fallbackYearMatch = firstLine.match(/\b(19|20)\d{2}\b/);
@@ -138,9 +137,9 @@ function parseRecommendationText(text: string): { title: string | null; year: nu
     };
   }
 
-  const rawTitle = match.groups.title?.trim().replace(/^['"]|['"]$/g, '') ?? null;
-  const yearStr = match.groups.year;
-  const reason = match.groups.reason?.trim() ?? null;
+  const rawTitle = match[1]?.trim().replace(/^['"]|['"]$/g, '') ?? null;
+  const yearStr = match[2];
+  const reason = match[3]?.trim() ?? null;
 
   let year: number | null = null;
   if (yearStr) {

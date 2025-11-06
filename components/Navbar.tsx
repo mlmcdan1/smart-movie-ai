@@ -1,78 +1,103 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from "next/link";
-import { useAuth } from "@/context/AuthContext";
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { FiArrowUpRight, FiLogOut, FiUser } from 'react-icons/fi';
 
 const links = [
-    { name: 'Home', href: '/'},
-    { name: 'Movies', href: '/movies' },
-    { name: 'Series', href: '/series' },
-    { name: 'Original', href: '/originals' }, 
+  { name: 'Home', href: '/' },
+  { name: 'Movies', href: '/movies' },
+  { name: 'Series', href: '/series' },
+  { name: 'Nostalgic', href: '/nostalgic' },
+  { name: 'Ask AI', href: '/ai-helper' },
 ];
 
 export default function Navbar() {
-    const [active, setActive] = useState('');
-    const { user } = useAuth();
-    const logout = () => {
-        console.log("Logout clicked");
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  if (pathname === '/welcome') return null;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/welcome');
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
+  };
 
-    return (
-        <nav className='w-full px-6 py-4 bg-[#0a0a0a] text-white shadow-lg flex justify-between items-center z-50 border-b border-gray-800'>
-            <div className='text-3xl font-extrabold text-cyan-400 tracking-wide cursor-pointer'>
-                SmartFlix
-            </div>
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === href;
+    return pathname.startsWith(href);
+  };
 
-            <ul className='flex space-x-6 text-lg font-medium'>
-                {links.map((link) => (
-                    <li 
-                        key={link.name}
-                        className='relative group cursor-pointer'
-                    >
-                        <Link 
-                            href={link.href}
-                            className={`transition-colors duration-300 ${
-                                active === link.name ? 'text-cyan-400' : 'text-white hover:text-cyan-400'
-                            }`}
-                            onClick={() => setActive(link.name)}
-                        >
-                            {link.name}
-                            <span
-                                className={`absolute left-0 -bottom-1 w-full h-0.5 bg-cyan-400 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ${
-                                    active === link.name ? 'scale-x-100' : ''
-                                }`}
-                            >
-                            </span>
-                        </Link>
-                    </li>
-                ))}
-            </ul>
-            <div className='text-sm text-white ml-4'>
-                {user ? (
-                    <div className='flex items-center space-x-4'>
-                        <span className='text-cyan-300'>
-                            Welcome, {user.email}
-                        </span>
-                        <button
-                            onClick={logout}
-                            className='text-sm text-red-400 border
-                            border-red-400 px-3 py-1 rounded 
-                            hover:text-white transition-colors 
-                            duration-300'
-                        >
-                            Logout
-                        </button>
-                    </div>
-                ) : (
-                    <Link 
-                        href="/login"
-                        className='text-cyan-400'    
-                    >
-                        Login
-                    </Link>
-                )}
-            </div>
-        </nav>
-    );
+  return (
+    <nav className="sticky top-0 z-40 border-b border-white/10 bg-black/40 backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-3 text-lg font-semibold uppercase tracking-[0.35em] text-white/80"
+        >
+          <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.6)] transition group-hover:shadow-[0_0_18px_rgba(34,211,238,0.9)]" />
+          SmartFlix
+        </Link>
+
+        <ul className="hidden items-center gap-6 text-sm font-medium text-white/70 md:flex">
+          {links.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <li key={link.name} className="relative">
+                <Link
+                  href={link.href}
+                  className={`group relative inline-flex items-center gap-1 rounded-full px-4 py-2 transition ${
+                    active
+                      ? 'bg-white/10 text-white shadow-[0_8px_30px_-18px_rgba(34,211,238,0.8)]'
+                      : 'hover:text-white/95'
+                  }`}
+                >
+                  {link.name}
+                  {link.name === 'Ask AI' && <FiArrowUpRight className="text-xs" />}
+                  <span
+                    className={`pointer-events-none absolute inset-x-2 bottom-1 h-[2px] origin-left rounded bg-cyan-400 transition-transform duration-300 ${
+                      active ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                    }`}
+                  />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className="flex items-center gap-4 text-sm text-white/70">
+          {user ? (
+            <>
+              <span
+                className="hidden h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-white/10 text-white/85 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.8)] md:inline-flex"
+                title={user.email ?? 'Profile'}
+              >
+                <FiUser className="text-base" />
+              </span>
+              <button
+                onClick={handleLogout}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition hover:border-red-400/60 hover:text-red-300"
+              >
+                <FiLogOut className="text-base" />
+                Logout
+              </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white/85 transition hover:border-white/40 hover:bg-white/15 hover:text-white"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
 }
